@@ -12,13 +12,34 @@
 # --- Целевая платформа: ESP32-P4 (MIPI-DSI доступен только на нём) ---
 CONFIG_IDF_TARGET="esp32p4"
 
-# --- Ревизия чипа: плата имеет v1.3, поддержка с v1.0 (см. README ветки
-#     esp_brookesia_phone) ---
-CONFIG_ESP32P4_REV_MIN_100=y
+# --- Ревизия чипа: плата имеет v1.3 ---
+# В ESP-IDF v5.5 поддержка ревизий ESP32-P4 разделена на две
+# ВЗАИМОИСКЛЮЧАЮЩИЕ ветки: < 3.0 (ранние чипы v0.x/v1.x — наш случай)
+# и >= 3.0 (серийные чипы v3.0, v3.1+).
+# ЛОВУШКА: дефолт IDF v5.5.5 — ветка >= 3.0 с минимумом ревизии v3.1
+# (ESP32P4_REV_MIN_301=y): на чипе v1.3 такая прошивка НЕ загрузится
+# (загрузчик остановится с ошибкой "chip revision is lower than the
+# minimal supported revision"). Поэтому сначала включаем ветку < 3.0:
+CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y
+# Минимум поддерживаемой ревизии внутри ветки: v0.0 — прошивка работает
+# на ЛЮБОЙ ревизии v0.x/v1.x, включая нашу v1.3.
+CONFIG_ESP32P4_REV_MIN_0=y
+# Производные значения (Kconfig выводит их сам; записаны для наглядности
+# и контроля diff'а сгенерированного sdkconfig):
+CONFIG_ESP32P4_REV_MIN_FULL=0
+CONFIG_ESP_REV_MIN_FULL=0
+CONFIG_ESP32P4_REV_MAX_FULL=199
+CONFIG_ESP_REV_MAX_FULL=199
 
 # --- Флеш 16 МБ, чип BOYA (установлен на плате) ---
 CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
-CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+# Флеш 40 МГц: при REV_MIN_0 опция 80 МГц запрещена в IDF v5.5.5
+# (ESPTOOLPY_FLASHFREQ_80M имеет depends on !ESP32P4_REV_MIN_0), дефолт
+# становится 40 МГц — строка задана явно для воспроизводимости.
+# НУЖНА 80 МГЦ? Замените REV_MIN_0 на REV_MIN_100 (минимум v1.0,
+# ревизия v1.3 остаётся поддержанной) и верните
+# CONFIG_ESPTOOLPY_FLASHFREQ_80M=y.
+CONFIG_ESPTOOLPY_FLASHFREQ_40M=y
 CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 CONFIG_SPI_FLASH_SUPPORT_BOYA_CHIP=y
 
