@@ -1,51 +1,218 @@
-# This file was generated using idf.py save-defconfig. It can be edited manually.
-# Espressif IoT Development Framework (ESP-IDF) 5.5.2 Project Minimal Configuration
+# ============================================================================
+#  sdkconfig.defaults — проект ESP_Brookesia Phone
+#  Ветка: esp_brookesia_phone | Репозиторий: megavatt05/ESP32P4-JC1060P470C-I_W_Y
+# ----------------------------------------------------------------------------
+#  Целевая плата : Guition JC1060P470C_I_W_Y (7" IPS 1024x600, MIPI-DSI)
+#  Контроллер    : ESP32-P4, ревизия v1.3 (efuse v0.3)
+#  Слейв связи   : ESP32-C6 (Wi-Fi 6 / BLE через ESP-Hosted, SDIO)
+#  Дисплей       : JD9165 (драйвер матрицы) + GT911 (тачскрин, I2C)
+#  Камера        : OV02C10 (MIPI-CSI)
+#  Память        : 32 МБ PSRAM (200 МГц, HEX-режим) + 16 МБ Flash (чип BOYA)
+#  ESP-IDF       : v5.5.5 (поддерживаются ветки v5.4+)
 #
+#  КАК ПРИМЕНЯТЬ ЭТОТ ФАЙЛ
+#  -----------------------
+#  Файл задаёт базовые (дефолтные) значения конфигурации и читается ТОЛЬКО
+#  при первичной генерации sdkconfig. После любых правок здесь выполните:
+#
+#      idf.py fullclean          # очистка сборки
+#      del sdkconfig             # Windows (в Linux/Mac: rm sdkconfig)
+#      idf.py set-target esp32p4 # пересоздание sdkconfig из этого файла
+#      idf.py -p COM10 build flash monitor
+#
+#  ИСТОРИЯ ИСПРАВЛЕНИЙ (адаптация под чип ESP32-P4 rev v1.3)
+#  ---------------------------------------------------------
+#  1. CONFIG_ESP32P4_REV_MIN_100=y   — минимум поддерживаемой ревизии v1.0
+#  2. CONFIG_SPI_FLASH_SUPPORT_BOYA_CHIP=y — драйвер флеш-чипа BOYA
+#  3. CONFIG_ESPTOOLPY_FLASHFREQ_80M=y     — флеш 80 МГц (по умолчанию 40)
+# ============================================================================
+
+
+# ----------------------------------------------------------------------------
+# 1. Целевая платформа
+# ----------------------------------------------------------------------------
+# Сборка под ESP32-P4 (двухъядерный RISC-V, до 400 МГц, MIPI-DSI/CSI)
 CONFIG_IDF_TARGET="esp32p4"
+
+
+# ----------------------------------------------------------------------------
+# 2. Ревизия чипа (важно для нашего чипа v1.3)
+# ----------------------------------------------------------------------------
+# Поддерживаем ревизии v1.0 и новее — наша плата имеет v1.3.
+# Эффект: из прошивки исключаются обходные пути (workaround) для старых
+# ревизий v0.x, бинарник становится немного меньше.
+# ВАЖНО: допустимы только значения выбора 0 (v0.0), 1 (v0.1), 100 (v1.0).
+# Варианты v3.0/v3.1 недоступны — чип ревизии ниже v3.0
+# (зависимость ESP32P4_SELECTS_REV_LESS_V3 в Kconfig ESP-IDF).
+# Максимум поддерживаемой ревизии остаётся v1.99 (ESP32P4_REV_MAX_FULL=199).
+CONFIG_ESP32P4_REV_MIN_100=y
+
+
+# ----------------------------------------------------------------------------
+# 3. Флеш-память: 16 МБ, чип BOYA
+# ----------------------------------------------------------------------------
+# Режим работы флеш-шины QIO (quad I/O)
 CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+
+# Частота флеш-шины 80 МГц.
+# По умолчанию ESP-IDF для ESP32-P4 выбирает 40 МГц — именно поэтому
+# в логе загрузки отображалось "SPI Speed : 40MHz".
+# Комбинация "флеш 80 МГц + PSRAM 200 МГц" штатно работает на rev v1.3.
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+
+# Объём флеш-чипа на плате
 CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+
+# Полноценный (вендорский) драйвер для флеш-чипов BOYA.
+# На плате JC1060P470C стоит именно BOYA; без этой опции в логе появляется
+# предупреждение "Detected boya flash chip but using generic driver".
+CONFIG_SPI_FLASH_SUPPORT_BOYA_CHIP=y
+
+# (Опционально) Повышение частоты CPU до 400 МГц вместо дефолтных 360 МГц.
+# Раскомментируйте следующую строку, если нужна максимальная
+# производительность процессора:
+# CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_400=y
+
+
+# ----------------------------------------------------------------------------
+# 4. Таблица разделов
+# ----------------------------------------------------------------------------
+# Используется собственная таблица из файла partitions.csv:
+#   nvs      — 24 КБ  (настройки: Wi-Fi, яркость, громкость и т.п.)
+#   phy_init —  4 КБ  (калибровочные данные радиотракта)
+#   factory  —  7 МБ  (само приложение; бинарю нужно ~6.3 МБ, запас 14%)
+#   storage  —  8 МБ  (SPIFFS: фото, музыка, ресурсы интерфейса)
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_OFFSET=0xa000
-CONFIG_EXAMPLE_ENABLE_CAM_SENSOR_PIC_VFLIP=n
-CONFIG_EXAMPLE_ENABLE_CAM_SENSOR_PIC_HFLIP=n
+
+
+# ----------------------------------------------------------------------------
+# 5. Компиляция и оптимизация
+# ----------------------------------------------------------------------------
+# Оптимизация по скорости (важно для плавности UI на LVGL)
 CONFIG_COMPILER_OPTIMIZATION_PERF=y
+# Корректное размещение "осиротевших" секций (требование компонентов Espressif)
 CONFIG_COMPILER_ORPHAN_SECTIONS_PLACE=y
+
+
+# ----------------------------------------------------------------------------
+# 6. PSRAM — внешняя память 32 МБ
+# ----------------------------------------------------------------------------
+# Включение поддержки внешней PSRAM (AP-Memory, HEX 16-line, 200 МГц)
 CONFIG_SPIRAM=y
+# Код (.text) и константы (.rodata) исполняются/читаются прямо из PSRAM —
+# главный источник производительности UI на этой плате
 CONFIG_SPIRAM_XIP_FROM_PSRAM=y
+# Выделять в PSRAM только блоки крупнее этого размера (байты),
+# мелкие объекты остаются во внутренней SRAM (она быстрее)
 CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=4096
+# Пробовать размещать буферы Wi-Fi/LwIP в PSRAM
 CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
+
+
+# ----------------------------------------------------------------------------
+# 7. Кэш второго уровня
+# ----------------------------------------------------------------------------
+# Расширенный кэш L2: 256 КБ, длина строки 128 байт
 CONFIG_CACHE_L2_CACHE_256KB=y
 CONFIG_CACHE_L2_CACHE_LINE_128B=y
+
+
+# ----------------------------------------------------------------------------
+# 8. Система: паники и стеки задач
+# ----------------------------------------------------------------------------
+# При панике печатать лог и остановиться (не перезагружаться) —
+# удобно для отладки на стенде
 CONFIG_ESP_SYSTEM_PANIC_PRINT_HALT=y
 CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=4096
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=4096
 CONFIG_ESP_MINIMAL_SHARED_STACK_SIZE=3584
+
+
+# ----------------------------------------------------------------------------
+# 9. Файловые системы
+# ----------------------------------------------------------------------------
+# Поддержка длинных имён файлов в FAT (нужно SD-карте), буфер имён в куче
 CONFIG_FATFS_LFN_HEAP=y
+# Лимит одновременно открытых файлов в VFS
+CONFIG_VFS_MAX_COUNT=15
+
+
+# ----------------------------------------------------------------------------
+# 10. FreeRTOS
+# ----------------------------------------------------------------------------
+# Тактовая частота планировщика: 1000 Гц (тик = 1 мс)
 CONFIG_FREERTOS_HZ=1000
+# Отладочные возможности: список задач с номером ядра и статистика CPU
 CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID=y
 CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS=y
+# Запрещено создавать стеки задач во внешней PSRAM (низкая скорость)
 CONFIG_FREERTOS_TASK_CREATE_ALLOW_EXT_MEM=n
+
+
+# ----------------------------------------------------------------------------
+# 11. Сеть: Wi-Fi через ESP-Hosted (слейв ESP32-C6 по SDIO)
+# ----------------------------------------------------------------------------
+# Ограничение числа внепоследовательных TCP-буферов (экономия памяти)
 CONFIG_LWIP_TCP_OOSEQ_MAX_PBUFS=4
-CONFIG_VFS_MAX_COUNT=15
-CONFIG_ESP_BROOKESIA_LOG_STYLE_STD=y
-CONFIG_ESP_BROOKESIA_MEMORY_USE_CUSTOM=y
-CONFIG_BSP_LCD_DPI_BUFFER_NUMS=2
-CONFIG_BSP_DISPLAY_LVGL_AVOID_TEAR=y
-CONFIG_BSP_DISPLAY_LVGL_DIRECT_MODE=y
-CONFIG_CAMERA_OV02C10=y
-CONFIG_ESP_VIDEO_ENABLE_DVP_VIDEO_DEVICE=n
-CONFIG_ESP_VIDEO_ENABLE_ISP_PIPELINE_CONTROLLER=y
+# Буферы Wi-Fi-приёмника и окно Block Ack для удалённого радиомодуля
 CONFIG_WIFI_RMT_STATIC_RX_BUFFER_NUM=10
 CONFIG_WIFI_RMT_RX_BA_WIN=6
+
+
+# ----------------------------------------------------------------------------
+# 12. ESP-Brookesia: UI-фреймворк "телефон" (домашний экран с приложениями)
+# ----------------------------------------------------------------------------
+# Логирование в стандартном стиле ESP_LOG
+CONFIG_ESP_BROOKESIA_LOG_STYLE_STD=y
+# Кастомное распределение памяти: объекты UI размещаются в PSRAM
+# (см. обработчик CONFIG_ESP_BROOKESIA_MEMORY_USE_CUSTOM в main/CMakeLists.txt)
+CONFIG_ESP_BROOKESIA_MEMORY_USE_CUSTOM=y
+
+
+# ----------------------------------------------------------------------------
+# 13. Дисплей: BSP, MIPI-DSI, плавность вывода
+# ----------------------------------------------------------------------------
+# Число буферов DPI-панели (2 = двойная буферизация)
+CONFIG_BSP_LCD_DPI_BUFFER_NUMS=2
+# Режим LVGL "Avoid tearing" — кадр не рвётся при обновлении
+CONFIG_BSP_DISPLAY_LVGL_AVOID_TEAR=y
+# Режим LVGL "Direct mode" — рисование прямо в экранный буфер
+CONFIG_BSP_DISPLAY_LVGL_DIRECT_MODE=y
+
+
+# ----------------------------------------------------------------------------
+# 14. Камера: OV02C10 через MIPI-CSI
+# ----------------------------------------------------------------------------
+# Драйвер сенсора OV02C10 (установлен на плате)
+CONFIG_CAMERA_OV02C10=y
+# Отражение картинки камеры по вертикали и горизонтали отключено
+CONFIG_EXAMPLE_ENABLE_CAM_SENSOR_PIC_VFLIP=n
+CONFIG_EXAMPLE_ENABLE_CAM_SENSOR_PIC_HFLIP=n
+# DVP-интерфейс камеры не используется — отключён
+CONFIG_ESP_VIDEO_ENABLE_DVP_VIDEO_DEVICE=n
+# Конвейер ISP (обработка изображения) включён
+CONFIG_ESP_VIDEO_ENABLE_ISP_PIPELINE_CONTROLLER=y
+
+
+# ----------------------------------------------------------------------------
+# 15. LVGL: память, кэши, шрифты, демо
+# ----------------------------------------------------------------------------
+# Прозрачность экрана поддерживается
 CONFIG_LV_COLOR_SCREEN_TRANSP=y
+# Кастомный аллокатор LVGL (куча с флагами heap_caps, см. esp_heap_caps.h)
 CONFIG_LV_MEM_CUSTOM=y
 CONFIG_LV_MEM_CUSTOM_INCLUDE="esp_heap_caps.h"
+# Стандартные memcpy/memset (без оптимизаций LVGL)
 CONFIG_LV_MEMCPY_MEMSET_STD=y
+# Кэш скруглений и размеры служебных буферов отрисовки
 CONFIG_LV_CIRCLE_CACHE_SIZE=10
 CONFIG_LV_LAYER_SIMPLE_BUF_SIZE=102400
 CONFIG_LV_IMG_CACHE_DEF_SIZE=20
 CONFIG_LV_GRAD_CACHE_DEF_SIZE=10240
+# Размещать критичные функции LVGL в быстрой внутренней IRAM
 CONFIG_LV_ATTRIBUTE_FAST_MEM_USE_IRAM=y
+# Встроенные шрифты Montserrat — от 8 до 48 pt (используются интерфейсом)
 CONFIG_LV_FONT_MONTSERRAT_8=y
 CONFIG_LV_FONT_MONTSERRAT_10=y
 CONFIG_LV_FONT_MONTSERRAT_12=y
@@ -66,8 +233,15 @@ CONFIG_LV_FONT_MONTSERRAT_42=y
 CONFIG_LV_FONT_MONTSERRAT_44=y
 CONFIG_LV_FONT_MONTSERRAT_46=y
 CONFIG_LV_FONT_MONTSERRAT_48=y
+# Служебные демо/тесты LVGL (на "обезьянке" Monkey можно гонять стресс-тест UI)
 CONFIG_LV_USE_MONKEY=y
 CONFIG_LV_USE_DEMO_WIDGETS=y
 CONFIG_LV_USE_DEMO_BENCHMARK=y
 CONFIG_LV_USE_DEMO_STRESS=y
+
+
+# ----------------------------------------------------------------------------
+# 16. Экспериментальные возможности ESP-IDF
+# ----------------------------------------------------------------------------
+# Разрешить ещё не финализированные функции IDF (требуются esp_video и др.)
 CONFIG_IDF_EXPERIMENTAL_FEATURES=y

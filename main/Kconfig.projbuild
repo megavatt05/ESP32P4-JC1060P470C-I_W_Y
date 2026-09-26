@@ -1,7 +1,20 @@
+# ============================================================================
+#  Дополнительные пункты меню проекта (видны в: idf.py menuconfig ->
+#  "Example Configurations"). Тексты подсказок — на русском языке.
+# ============================================================================
 menu "Example Configurations"
     config EXAMPLE_ENABLE_SD_CARD
-        bool "Enable SD Card"
+        bool "Включить SD-карту (Enable SD Card)"
         default n
-        help 
-            Enabling this option will initialize the SD card, so the SD card needs to be inserted into the slot. Additionally, if using the Video Player example, an MJPEG format video must be saved on the SD card.
+        help
+            Включает инициализацию SD-карты при старте. Карта должна быть
+            вставлена в слот ДО включения платы. Для работы видеоплеера
+            положите на карту видео в формате MJPEG (см. README, раздел
+            "SD-карта и видеоплеер").
+
+            ПРИМЕЧАНИЕ для платы JC1060P470C: в main.cpp вызов монтирования
+            SD-карты сейчас выполняется безусловно (проверка этой опции
+            закомментирована в исходном коде вендора), поэтому ошибка
+            "sdmmc_init_ocr ... 0x107" в логе означает лишь отсутствие карты
+            в слоте и на работу демо не влияет.
 endmenu

@@ -1,221 +1,233 @@
-# ESP_Brookesia Phone (standalone branch)
+# ESP_Brookesia Phone — автономный пример для Guition JC1060P470C
 
 > **Эта ветка содержит только пример `esp_brookesia_phone`**, вынесенный из папки
 > `1-Demo/Demo_IDF/ESP-IDF/esp_brookesia_phone` основного репозитория в корень —
-> поэтому зелёная кнопка **Code** сразу отдаёт готовый проект (Clone / Download ZIP).
+> поэтому зелёная кнопка **Code** сразу отдаёт готовый к сборке проект
+> (Clone / Download ZIP). Все файлы проекта снабжены комментариями и описаниями
+> на русском языке.
 
-## Как скачать
+Пример демонстрирует интерфейс в стиле Android («телефон» с рабочим столом),
+построенный на фреймворке [ESP_Brookesia](https://github.com/espressif/esp-brookesia)
+от Espressif. В комплекте работают приложения: калькулятор, музыкальный плеер,
+настройки, игра 2048, камера, просмотр изображений и видеоплеер (с SD-карты).
+Пример адаптирован для платы **Guition JC1060P470C_I_W_Y** на чипе
+**ESP32-P4 ревизии v1.3**.
 
-**Вариант 1 — ZIP:** кнопка **Code → Download ZIP** на этой странице.
+---
 
-**Вариант 2 — git:**
+## Содержание
+
+1. [Аппаратное обеспечение](#аппаратное-обеспечение)
+2. [Как скачать проект](#как-скачать-проект)
+3. [Требования к среде разработки](#требования-к-среде-разработки)
+4. [Сборка и прошивка](#сборка-и-прошивка)
+5. [Что вы увидите при запуске](#что-вы-увидите-при-запуске)
+6. [Wi-Fi и подключение к сети](#wi-fi-и-подключение-к-сети)
+7. [SD-карта и видеоплеер](#sd-карта-и-видеоплеер)
+8. [Готовая прошивка без сборки](#готовая-прошивка-без-сборки)
+9. [Структура проекта](#структура-проекта)
+10. [Конфигурация (sdkconfig.defaults)](#конфигурация-sdkconfigdefaults)
+11. [Устранение неполадок](#устранение-неполадок)
+12. [История изменений ветки](#история-изменений-ветки)
+
+---
+
+## Аппаратное обеспечение
+
+| Компонент | Описание |
+|---|---|
+| Плата | Guition JC1060P470C_I_W_Y (7" IPS 1024×600) |
+| Основной чип | ESP32-P4, двухъядерный RISC-V, ревизия **v1.3** |
+| Чип связи | ESP32-C6 — Wi-Fi 6 / BLE, работает слейвом по SDIO (ESP-Hosted) |
+| Дисплей | 7" IPS, 1024×600, интерфейс MIPI-DSI, драйверная микросхема **JD9165** |
+| Тачскрин | Ёмкостный, контроллер **GT911** по I2C (SDA=GPIO7, SCL=GPIO8) |
+| Камера | Сенсор **OV02C10**, интерфейс MIPI-CSI |
+| Память | 32 МБ PSRAM (200 МГц) + 16 МБ Flash (чип **BOYA**) |
+| Питание | USB-C (порт USB-UART на базе CH340) |
+
+Дополнительное оборудование не обязательно: музыка и фотографии, которые
+видно в интерфейсе, хранятся во внутреннем разделе SPIFFS флеш-памяти.
+
+## Как скачать проект
+
+**Способ 1 — ZIP-архив (без git):**
+нажмите зелёную кнопку **Code → Download ZIP** на странице этой ветки,
+затем распакуйте архив.
+
+**Способ 2 — через git (рекомендуется):**
+
 ```bash
 git clone -b esp_brookesia_phone https://github.com/megavatt05/ESP32P4-JC1060P470C-I_W_Y.git
 cd ESP32P4-JC1060P470C-I_W_Y
 ```
 
-## Как запустить (кратко)
+**Прямая ссылка на ZIP:**
+`https://github.com/megavatt05/ESP32P4-JC1060P470C-I_W_Y/archive/refs/heads/esp_brookesia_phone.zip`
 
-1. Установите **ESP-IDF v5.4 или новее** и активируйте окружение (`. ./export.sh`).
-2. Соберите и прошейте (замените `PORT` на порт платы, например `/dev/ttyACM0` или `COM3`):
-   ```bash
-   idf.py set-target esp32p4
-   idf.py -p PORT flash monitor
-   ```
-3. Для «Video Player» включите SD-карту: `idf.py menuconfig` → *Example Configurations* → **Enable SD Card**,
-   положите MJPEG-видео (конвертация через ffmpeg: `ffmpeg -i in.mp4 -vcodec mjpeg -q:v 2 -vf "scale=1024:600" -acodec copy out.mjpeg`) на карту FAT32.
-4. Готовая прошивка без сборки: `bin/JC1060P470-I-Y-V2.4.bin` (прошивается через `flash_download_tool`, раздел **8-Burn operation** основной ветки).
+Все зависимости проекта уже лежат локально в папке `components/` — доступ
+в интернет для Component Manager при сборке не обязателен.
 
-Все зависимости лежат локально в `components/` — интернет для Component Manager не обязателен.
+## Требования к среде разработки
+
+* **ESP-IDF v5.4 или новее** (проверено на v5.5.5).
+* Инструкция по установке: [Get Started — ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/).
+* Перед сборкой активируйте окружение:
+  * Windows: запускайте терминал из «ESP-IDF 5.5 PowerShell / CMD»
+    (например, `C:\Espressif\`), либо выполните `C:\esp\v5.5.5\esp-idf\export.bat`;
+  * Linux/macOS: `. ~/esp/v5.5.5/esp-idf/export.sh`.
+
+## Сборка и прошивка
+
+Замените `COM10` на фактический порт вашей платы (Windows: `COMx`,
+Linux: `/dev/ttyACM0` или `/dev/ttyUSB0`):
+
+```bash
+idf.py set-target esp32p4          # выбрать целевой чип (создаст sdkconfig)
+idf.py build                       # сборка проекта
+idf.py -p COM10 flash monitor      # прошивка и запуск монитора порта
+```
+
+Выход из монитора — `Ctrl+]`, справка — `Ctrl+T`, затем `Ctrl+H`.
+
+> **Совет:** если ранее плата прошивалась сторонними утилитами
+> (flash_download_tool) или вы меняли `sdkconfig.defaults`, начните с полной
+> очистки, чтобы загрузчик и таблица разделов гарантированно совпали с проектом:
+> `idf.py fullclean` → удалить файл `sdkconfig` → `idf.py set-target esp32p4`.
+
+## Что вы увидите при запуске
+
+После загрузки на дисплее открывается рабочий стол «телефона» (тёмная тема
+1024×600) с иконками приложений: калькулятор, музыкальный плеер (5 треков из
+SPIFFS), настройки (яркость, громкость, Wi-Fi, статус батареи), игра 2048,
+камера OV02C10, галерея изображений и видеоплеер (если вставлена SD-карта).
+В последовательный порт при этом печатается журнал: инициализация SPIFFS,
+аудиокодека ES8311, MIPI-DSI панели JD9165, тача GT911, камеры и подъём
+связи с ESP32-C6 через ESP-Hosted.
+
+## Wi-Fi и подключение к сети
+
+Радиомодуль находится на чипе **ESP32-C6**, который общается с P4 по SDIO
+через компонент **ESP-Hosted**. Настройки сети задаются прямо в приложении
+**Settings** на плате (раздел Wi-Fi) и сохраняются в NVS.
+
+Обратите внимание: заводская прошивка C6 в плате имеет версию 2.3.2, тогда
+как компонент esp_hosted из ESP-IDF v5.5.x — версии 3.x. Загрузчик связи
+сообщит о несовпадении версий (`major version mismatch`), но продолжит работу
+в совместимом режиме — Wi-Fi при этом функционирует.
+
+## SD-карта и видеоплеер
+
+Видеоплеер появляется на рабочем столе только если SD-карта смонтировалась
+успешно. Требования и подготовка видео:
+
+1. Карта **microSD до 32 ГБ**, отформатирована в **FAT32**.
+2. Видео — только в контейнере **MJPEG**. Конвертация через ffmpeg:
+
+```bash
+sudo apt update && sudo apt install ffmpeg     # установка ffmpeg (Linux)
+ffmpeg -i входной_файл.mp4 -vcodec mjpeg -q:v 2 -vf "scale=1024:600" -acodec копия_остаётся выходной_файл.mjpeg
+```
+
+Точная команда:
+
+```bash
+ffmpeg -i input.mp4 -vcodec mjpeg -q:v 2 -vf "scale=1024:600" -acodec copy output.mjpeg
+```
+
+3. Готовый `.mjpeg`-файл положите в корень карты и вставьте её в слот до
+   включения платы.
+
+## Готовая прошивка без сборки
+
+В папке `bin/` лежит собранный образ **`JC1060P470-I-Y-V2.4.bin`** — его можно
+прошить без установки ESP-IDF утилитой **flash_download_tool** (ссылка на
+утилиту и инструкция — в основной ветке репозитория, папка
+`8-Burn operation`). Адрес прошивки — `0x20000` (раздел `factory`).
+
+## Структура проекта
+
+```
+.
+├── CMakeLists.txt            # Корневой сценарий сборки CMake
+├── partitions.csv            # Таблица разделов флеш-памяти
+├── sdkconfig.defaults        # Базовые настройки проекта (с русскими комментариями)
+├── README.md                 # Этот документ
+├── README_CN.md              # Оригинальная документация (китайская, от вендора)
+├── dependencies.lock         # Зафиксированные версии зависимостей (генерируется)
+├── bin/                      # Готовая прошивка (JC1060P470-I-Y-V2.4.bin)
+├── spiffs/                   # Контент, зашиваемый в раздел storage (фото/музыка)
+└── main/                     # Исходный код приложения
+    ├── main.cpp              # Точка входа app_main: инициализация и запуск UI
+    ├── idf_component.yml     # Список зависимостей (менеджер компонентов IDF)
+    ├── Kconfig.projbuild     # Пункт меню "Example Configurations" в menuconfig
+    └── CMakeLists.txt        # Сценарий сборки главного компонента
+└── components/               # Локальные (пропатченные под плату) компоненты
+    ├── apps/                 # Приложения: калькулятор, плеер, камера, 2048...
+    ├── bsp_extra/            # Расширение BSP: аудио, SPIFFS, SD-карта
+    ├── espressif__esp-brookesia/          # UI-фреймворк "Phone"
+    ├── espressif__esp32_p4_function_ev_board/  # BSP платы (адаптирован)
+    ├── espressif__esp_cam_sensor/         # Драйверы сенсоров камер
+    ├── espressif__esp_video/              # Видеоконвейер (MIPI-CSI)
+    ├── espressif__esp_ipa/                # Обработка изображений ISP
+    ├── ethernet_init/                     # Утилита инициализации Ethernet
+    ├── human_face_detect/                 # Модель детекции лиц (для камеры)
+    └── pedestrian_detect/                 # Модель детекции пешеходов
+```
+
+## Конфигурация (sdkconfig.defaults)
+
+Файл `sdkconfig.defaults` полностью снабжён комментариями на русском и
+разбит на 16 тематических разделов (платформа, ревизия чипа, флеш, PSRAM,
+LVGL и т.д.). Он применяется **только при первичной генерации** `sdkconfig`:
+
+```bash
+idf.py fullclean
+del sdkconfig               # Windows (Linux/Mac: rm sdkconfig)
+idf.py set-target esp32p4
+idf.py build
+```
+
+Тонкая настройка через меню: `idf.py menuconfig`.
+
+Ключевые параметры под чип ревизии v1.3 и плату JC1060P470C:
+
+| Параметр | Значение | Зачем |
+|---|---|---|
+| `CONFIG_ESP32P4_REV_MIN_100` | y | Поддержка ревизий v1.0+ (наша — v1.3); убирает обходные пути для v0.x |
+| `CONFIG_SPI_FLASH_SUPPORT_BOYA_CHIP` | y | Вендорский драйвер флеш-чипа BOYA, снят warning из лога |
+| `CONFIG_ESPTOOLPY_FLASHFREQ_80M` | y | Флеш 80 МГц вместо дефолтных 40 МГц |
+| `CONFIG_SPIRAM_SPEED_200M` | y (по умолчанию) | 250 МГц недоступна на ревизиях ниже v3.0 |
+| `CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_400` | закомментирован | Опция для разгона CPU до 400 МГц |
+
+## Устранение неполадок
+
+| Сообщение в логе | Причина | Действие |
+|---|---|---|
+| `Detected boya flash chip but using generic driver` | Флеш BOYA без вендорского драйвера | **Исправлено** в `sdkconfig.defaults` (`CONFIG_SPI_FLASH_SUPPORT_BOYA_CHIP=y`) |
+| `SPI Speed : 40MHz` в логе загрузчика | Дефолтная частота флеша IDF для P4 | **Исправлено**: `CONFIG_ESPTOOLPY_FLASHFREQ_80M=y`; пересоздайте sdkconfig |
+| `sdmmc_init_ocr: send_op_cond (1) returned 0x107` | SD-карта не вставлена / не читается | Вставьте FAT32-карту ≤32 ГБ; без неё демо работает от SPIFFS |
+| `ldo: The voltage value 0 is out of the recommended range` | BSP от EV-платы управляет питанием SD через LDO; на плате Guition питание прямое | Косметика, игнорируйте |
+| `i2c.master: Please check pull-up resistances...` | Предупреждение драйвера I2C о подтяжках | Косметика — тач GT911 и кодек ES8311 работают |
+| `ledc: GPIO 23 is not usable` | Конфликт ШИМ-пина подсветки BSP EV-платы | Косметика — подсветка включается штатно |
+| `lcd_panel: swap_xy is not supported` | Поворот экрана не поддерживается панелью | Нормально для JD9165, игнорируйте |
+| `eh_init_evt: major version mismatch` | Прошивка C6 (2.3.2) старше esp_hosted (3.x) | Wi-Fi работает в совместимом режиме; при желании обновите прошивку C6 |
+| `StaDisconnected ssid="Test_1" reason=201` | Точка доступа не найдена | Задайте SSID/пароль в приложении Settings на плате |
+| Плата не прошивается по COMx | Занят порт / неверный порт | Закройте мониторы, проверьте номер порта в диспетчере устройств |
+
+## История изменений ветки
+
+* **`65593fa`** — пример `esp_brookesia_phone` вынесен в корень ветки;
+  добавлена русская инструкция по скачиванию и запуску.
+* **Текущий коммит** — адаптация под чип ESP32-P4 rev v1.3:
+  * `sdkconfig.defaults`: включён минимум ревизии v1.0, драйвер BOYA,
+    флеш 80 МГц; файл полностью прокомментирован на русском;
+  * `README.md` переписан на русский язык с разделом устранения неполадок;
+  * русские комментарии добавлены в `CMakeLists.txt`, `partitions.csv`,
+    `main/CMakeLists.txt`, `main/idf_component.yml`, `main/Kconfig.projbuild`,
+    `main/main.cpp`.
 
 ---
 
-# ESP_Brookesia Phone
-
-[中文版本](./README_CN.md)
-
-This example, based on [ESP_Brookesia](https://github.com/espressif/esp-brookesia), demonstrates an Android-like interface that includes many different applications. The example utilizes the development board's MIPI-DSI, MIPI-CSI, ESP32-C6, SD card, and audio interfaces. Based on this example, a use case can be created using ESP_Brookesia, enabling efficient development of multimedia applications.
-
-## Getting Started
-
-
-### Prerequisites
-
-* An ESP32-P4-Function-EV-Board.
-* A 7-inch 1024 x 600 LCD screen powered by the [EK79007](https://docs.espressif.com/projects/esp-dev-kits/en/latest/_static/esp32-p4-function-ev-board/camera_display_datasheet/display_driver_chip_EK79007AD_datasheet.pdf) IC, accompanied by a 32-pin FPC connection [adapter board](https://docs.espressif.com/projects/esp-dev-kits/en/latest/_static/esp32-p4-function-ev-board/schematics/esp32-p4-function-ev-board-lcd-subboard-schematics.pdf) ([LCD Specifications](https://docs.espressif.com/projects/esp-dev-kits/en/latest/_static/esp32-p4-function-ev-board/camera_display_datasheet/display_datasheet.pdf)).
-* A MIPI-CSI camera powered by the SC2336 IC, accompanied by a 32-pin FPC connection [adapter board](https://docs.espressif.com/projects/esp-dev-kits/en/latest/_static/esp32-p4-function-ev-board/schematics/esp32-p4-function-ev-board-camera-subboard-schematics.pdf) ([Camera Specifications](https://docs.espressif.com/projects/esp-dev-kits/en/latest/_static/esp32-p4-function-ev-board/camera_display_datasheet/camera_datasheet.pdf)).
-* A USB-C cable for power supply and programming.
-* Please refer to the following steps for the connection:
-    * **Step 1**. According to the table below, connect the pins on the back of the screen adapter board to the corresponding pins on the development board.
-
-        | Screen Adapter Board | ESP32-P4-Function-EV-Board |
-        | -------------------- | -------------------------- |
-        | 5V (any one)         | 5V (any one)               |
-        | GND (any one)        | GND (any one)              |
-        | PWM                  | GPIO26                     |
-        | LCD_RST              | GPIO27                     |
-
-    * **Step 2**. Connect the FPC of LCD through the `MIPI_DSI` interface.
-    * **Step 3**. Connect the FPC of Camera through the `MIPI_CSI` interface.
-    * **Step 4**. Use a USB-C cable to connect the `USB-UART` port to a PC (Used for power supply and viewing serial output).
-    * **Step 5**. Turn on the power switch of the board.
-
-
-### ESP-IDF Required
-
-- This example supports ESP-IDF release/v5.4 and later branches. By default, it runs on ESP-IDF release/v5.4.
-- Please follow the [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) to set up the development environment. **We highly recommend** you [Build Your First Project](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html#build-your-first-project) to get familiar with ESP-IDF and make sure the environment is set up correctly.
-
-### Get the esp-dev-kits Repository
-
-To start from the examples in esp-dev-kits, clone the repository to the local PC by running the following commands in the terminal:
-
-```
-git clone --recursive https://github.com/espressif/esp-dev-kits.git
-```
-
-### Configuration
-
-Run ``idf.py menuconfig`` and go to ``Board Support Package(ESP32-P4)``:
-
-```
-menuconfig > Component config > Board Support Package
-```
-
-To use the SD card and enable the "Video Player" APP, run ``idf.py menuconfig`` and then select ``Example Configurations`` > ``Enable SD Card``
-
-**Note:**
-To experience video playback, save MJPEG format videos on an SD card and insert the SD card into the SD card slot. **Currently, only MJPEG format videos are supported**. After inserting the SD card, the video playback app will automatically appear on the interface. The method for video format conversion is as follows:
-
-* Install ffmpeg.
-```
-    sudo apt update
-    sudo apt install ffmpeg
-```
-* Use ffmpeg to convert video.
-```
-   ffmpeg -i YOUR_INPUT_FILE_NAME.mp4 -vcodec mjpeg -q:v 2 -vf "scale=1024:600" -acodec copy YOUR_OUTPUT_FILE_NAME.mjpeg
-```
-
-## How to Use the Example
-
-
-### Build and Flash the Example
-
-Build the project and flash it to the board, then run monitor tool to view serial output (replace `PORT` with your board's serial port name):
-
-```c
-idf.py -p PORT flash monitor
-```
-
-To exit the serial monitor, type ``Ctrl-]``.
-
-See the [ESP-IDF Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html) for full steps to configure and use ESP-IDF to build projects.
-
-
-### Example Output
-
-- The complete log is as follows:
-
-    ```c
-    I (672) esp_image: segment 1: paddr=00458028 vaddr=301000ESP-ROM:esp32p4-eco1-20240205
-    Build:Feb  5 2024
-    rst:0x17 (CHIP_USB_UART_RESET),boot:0xc (SPI_FAST_FLASH_BOOT)
-    Core0 Saved PC:0x4ff2ebfa
-    Core1 Saved PC:0x4fc05716
-    SPI mode:DIO, clock div:1
-    load:0x4ff33ce0,len:0x1a54
-    load:0x4ff2abd0,len:0xf24
-    load:0x4ff2cbd0,len:0x33ac
-    entry 0x4ff2abda
-    I (27) boot: ESP-IDF v5.4-dev-3432-g906f36bdb9 2nd stage bootloader
-    I (28) boot: compile time Oct 17 2024 18:21:49
-    I (29) boot: Multicore bootloader
-    I (33) boot: chip revision: v0.1
-    I (36) boot: efuse block revision: v0.0
-    I (41) qio_mode: Enabling default flash chip QIO
-    I (46) boot.esp32p4: SPI Speed      : 80MHz
-    I (51) boot.esp32p4: SPI Mode       : QIO
-    I (55) boot.esp32p4: SPI Flash Size : 16MB
-    I (60) boot: Enabling RNG early entropy source...
-    I (66) boot: Partition Table:
-    I (69) boot: ## Label            Usage          Type ST Offset   Length
-    I (77) boot:  0 nvs              WiFi data        01 02 00009000 00006000
-    I (84) boot:  1 phy_init         RF data          01 01 0000f000 00001000
-    I (91) boot:  2 factory          factory app      00 00 00010000 00900000
-    I (99) boot:  3 storage          Unknown data     01 82 00910000 00400000
-    I (107) boot: End of partition table
-    I (111) esp_image: segment 0: paddr=00010020 vaddr=481a0020 size=448000h (4489216) map
-    I (672) esp_image: segment 1: paddr=00458028 vaddr=30100000 size=0002ch (    44) load
-    I (674) esp_image: segment 2: paddr=0045805c vaddr=3010002c size=0003ch (    60) load
-    I (679) esp_image: segment 3: paddr=004580a0 vaddr=4ff00000 size=07f78h ( 32632) load
-    I (692) esp_image: segment 4: paddr=00460020 vaddr=48000020 size=192130h (1646896) map
-    I (899) esp_image: segment 5: paddr=005f2158 vaddr=4ff07f78 size=12740h ( 75584) load
-    I (912) esp_image: segment 6: paddr=006048a0 vaddr=4ff1a700 size=038e0h ( 14560) load
-    I (916) esp_image: segment 7: paddr=00608188 vaddr=50108080 size=00018h (    24) load
-    I (923) boot: Loaded app from partition at offset 0x10000
-    I (924) boot: Disabling RNG early entropy source...
-    I (941) hex_psram: vendor id    : 0x0d (AP)
-    I (942) hex_psram: Latency      : 0x01 (Fixed)
-    I (942) hex_psram: DriveStr.    : 0x00 (25 Ohm)
-    I (945) hex_psram: dev id       : 0x03 (generation 4)
-    I (951) hex_psram: density      : 0x07 (256 Mbit)
-    I (956) hex_psram: good-die     : 0x06 (Pass)
-    I (961) hex_psram: SRF          : 0x02 (Slow Refresh)
-    I (967) hex_psram: BurstType    : 0x00 ( Wrap)
-    I (972) hex_psram: BurstLen     : 0x03 (2048 Byte)
-    I (978) hex_psram: BitMode      : 0x01 (X16 Mode)
-    I (983) hex_psram: Readlatency  : 0x04 (14 cycles@Fixed)
-    I (989) hex_psram: DriveStrength: 0x00 (1/1)
-    I (994) MSPI DQS: tuning success, best phase id is 2
-    I (1177) MSPI DQS: tuning success, best delayline id is 11
-    I esp_psram: Found 32MB PSRAM device
-    I esp_psram: Speed: 200MHz
-    I (1391) mmu_psram: .rodata xip on psram
-    I (1471) mmu_psram: .text xip on psram
-    I (1472) hex_psram: psram CS IO is dedicated
-    I (1473) cpu_start: Multicore app
-    I (1797) esp_psram: SPI SRAM memory test OK
-    I (1807) cpu_start: Pro cpu start user code
-    I (1807) cpu_start: cpu freq: 360000000 Hz
-    I (1807) app_init: Application information:
-    I (1810) app_init: Project name:     esp_brookesia_demo
-    I (1816) app_init: App version:      da1c00bd-dirty
-    I (1822) app_init: Compile time:     Oct 17 2024 18:21:44
-    I (1828) app_init: ELF file SHA256:  25e462383...
-    I (1833) app_init: ESP-IDF:          v5.4-dev-3432-g906f36bdb9
-    I (1840) efuse_init: Min chip rev:     v0.1
-    I (1844) efuse_init: Max chip rev:     v0.99 
-    I (1850) efuse_init: Chip rev:         v0.1
-    I (1854) heap_init: Initializing. RAM available for dynamic allocation:
-    I (1862) heap_init: At 4FF23590 len 00017A30 (94 KiB): RAM
-    I (1868) heap_init: At 4FF3AFC0 len 00004BF0 (18 KiB): RAM
-    I (1874) heap_init: At 4FF40000 len 00040000 (256 KiB): RAM
-    I (1880) heap_init: At 50108098 len 00007F68 (31 KiB): RTCRAM
-    I (1887) heap_init: At 30100068 len 00001F98 (7 KiB): TCM
-    I (1893) esp_psram: Adding pool of 22272K of PSRAM memory to heap allocator
-    I (1901) spi_flash: detected chip: generic
-    W (1905) spi_flash: Detected flash size > 16 MB, but access beyond 16 MB is not supported for this flash model yet.
-    I (1916) spi_flash: flash io: qio
-    W (1920) spi_flash: Detected size(32768k) larger than the size in the binary image header(16384k). Using the size in the binary image header.
-    I (1934) host_init: ESP Hosted : Host chip_ip[18]
-    I (1939) H_API: ESP-Hosted starting. Hosted_Tasks: prio:23, stack: 5120 RPC_task_stack: 5120
-    sdio_mempool_create free:22930068 min-free:22930068 lfb-def:22544384 lfb-8bit:22544384
-
-    I (1956) gpio: GPIO[18]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-    I (1966) gpio: GPIO[19]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-    I (1975) gpio: GPIO[14]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-    I (1984) gpio: GPIO[15]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-    I (1994) gpio: GPIO[16]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-    I (2003) gpio: GPIO[17]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-    ...
-    ```
-
-## Technical Support and Feedback
-
-Please use the following feedback channels:
-
-- For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=22) forum.
-- For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-dev-kits/issues).
-
-We will get back to you as soon as possible.
+*Пример основан на [ESP_Brookesia Phone](https://github.com/espressif/esp-brookesia)
+от Espressif и демо производителя платы (репозиторий wegi1/ESP32P4-JC1060P470C-I_W_Y).
+Адаптация, конфигурация под rev v1.3 и русская документация — megavatt05.*
