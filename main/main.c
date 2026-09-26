@@ -374,7 +374,14 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_lcd_new_panel_io_dbi(dsi_bus, &dbi_cfg, &io_handle));
 
     // --- Шаг 5. Конфигурация DPI (видеопоток): 52 МГц, RGB565, 1024x600 ------
-    // Тайминги — фирменные для этой матрицы (hsync/vsync porch'и)
+    // Тайминги — фирменные для этой матрицы (hsync/vsync porch'и).
+    // Сверено с компонентом espressif/esp_lcd_jd9165 v2.0.2 (реестр, MCP):
+    // порядок полей jd9165_lcd_init_cmd_t {cmd, data, data_bytes, delay_ms}
+    // соответствует нашей таблице команд.
+    // Альтернатива — официальный макрос JD9165_1024_600_PANEL_60HZ_DPI_CONFIG:
+    // 50 МГц, H-porch 136/20/160, V-porch 12/2/20. Наши значения уже проверены
+    // на этой панели в демо esp_brookesia_phone; если картинка "поедет" —
+    // замените porch'и на официальный вариант.
     esp_lcd_dpi_panel_config_t dpi_cfg = {
         .dpi_clk_src = MIPI_DSI_DPI_CLK_SRC_DEFAULT,
         .dpi_clock_freq_mhz = LCD_DPI_CLOCK_MHZ,
