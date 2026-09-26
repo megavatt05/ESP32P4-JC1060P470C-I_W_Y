@@ -1,0 +1,27 @@
+# ============================================================================
+#  .gitignore — проект jd9165_hello_display (ESP-IDF)
+# ============================================================================
+
+# Артефакты сборки (пересоздаются командой idf.py build)
+build/
+
+# Сгенерированные конфиги (пересоздаются из sdkconfig.defaults командой
+# idf.py set-target esp32p4; в git храним только sdkconfig.defaults)
+sdkconfig
+sdkconfig.old
+
+# Кэш менеджера компонентов (скачивается сам из main/idf_component.yml;
+# точные версии зафиксированы в dependencies.lock)
+managed_components/
+
+# Служебные файлы редакторов
+*.swp
+*.swo
+*~
+.idea/
+*.code-workspace
+
+# Мусор операционных систем
+Thumbs.db
+Desktop.ini
+.DS_Store

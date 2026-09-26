@@ -1,0 +1,31 @@
+# ============================================================================
+#  sdkconfig.defaults — проект jd9165_hello_display
+#  Плата: Guition JC1060P470C_I_W_Y | Чип: ESP32-P4 rev v1.3
+# ----------------------------------------------------------------------------
+#  Минимальный набор настроек: целевой чип, флеш, PSRAM (для фреймбуфера).
+#  Применяется при первичной генерации конфига:
+#      idf.py set-target esp32p4
+#  После правок этого файла:
+#      idf.py fullclean && del sdkconfig && idf.py set-target esp32p4
+# ============================================================================
+
+# --- Целевая платформа: ESP32-P4 (MIPI-DSI доступен только на нём) ---
+CONFIG_IDF_TARGET="esp32p4"
+
+# --- Ревизия чипа: плата имеет v1.3, поддержка с v1.0 (см. README ветки
+#     esp_brookesia_phone) ---
+CONFIG_ESP32P4_REV_MIN_100=y
+
+# --- Флеш 16 МБ, чип BOYA (установлен на плате) ---
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_SPI_FLASH_SUPPORT_BOYA_CHIP=y
+
+# --- PSRAM 32 МБ: во внешней памяти лежит фреймбуфер экрана
+#     (1024x600x2 байта = 1.2 МБ — во внутреннюю SRAM не поместится) ---
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_HEX=y
+CONFIG_SPIRAM_SPEED_200M=y
+CONFIG_SPIRAM_USE_MALLOC=y
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=4096
