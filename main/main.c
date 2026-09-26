@@ -29,6 +29,9 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "esp_err.h"
+#include "esp_check.h"  // ESP_RETURN_ON_ERROR / ESP_ERROR_CHECK с логом — без него
+                        // ошибка "implicit declaration of function
+                        // 'ESP_RETURN_ON_ERROR'"
 #include "driver/ledc.h"
 #include "esp_ldo_regulator.h"
 #include "esp_lcd_panel_io.h"
