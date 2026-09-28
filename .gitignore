@@ -1,0 +1,16 @@
+cd C:\Users\megav\Downloads\ESP32P4-JC1060P470C-I_W_Y
+
+@"
+# Build artifacts
+build/
+managed_components/
+
+# Local ESP-IDF config
+sdkconfig
+sdkconfig.old
+
+# IDE
+.vscode/
+.clangd
+*.code-workspace
+"@ | Out-File -Encoding ascii .gitignore
