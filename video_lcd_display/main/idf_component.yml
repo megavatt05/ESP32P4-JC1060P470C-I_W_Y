@@ -1,8 +1,9 @@
 dependencies:
   idf: '>=5.3'
 
+  # Must match local esp_cam_sensor 1.2.1 (OV02C10). Do NOT use 2.x.
   esp_video:
-    version: '*'
+    version: "~1.2.0"
     public: true
 
   espressif/esp_lcd_ek79007:
